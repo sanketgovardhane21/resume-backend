@@ -19,6 +19,9 @@ app.use(
   })
 );
 
+/* 📦 Body parser */
+app.use(express.json({ limit: "1mb" }));
+
 /* 🛑 Rate limiting */
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -31,19 +34,17 @@ const aiLimiter = rateLimit({
   max: 5, // 5 AI calls per minute per IP
 });
 
-app.use("/api/ai", aiLimiter);
-
 const pdfLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 3,
+  windowMs: 60 * 1000, // 1 minute
+  max: 2,             // max 2 PDF requests per IP per minute
+  message: {
+    error: "Too many PDF requests. Please wait a minute and try again.",
+  },
 });
 
 app.use("/api/pdf", pdfLimiter, pdfRoutes);
 
 app.use("/api/payment", paymentRoutes);
-
-/* 📦 Body parser */
-app.use(express.json({ limit: "1mb" }));
 
 /* ✅ Health check */
 app.get("/health", (req, res) => {
@@ -53,6 +54,6 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.use("/api/ai", aiRoutes);
+app.use("/api/ai", aiLimiter ,aiRoutes);
 
 export default app;
